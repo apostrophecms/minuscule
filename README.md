@@ -30,13 +30,11 @@ const {
 } = minuscule(app);
 
 get('/projects/:projectId', expectProjectId, async req => {
-  const results = await myDatabase.find({
-    projectId: req.params.projectId
+  const result = await myDatabase.findOne({
+    id: req.params.projectId
   });
   // returning an object -> automatic JSON response via req.res
-  return {
-    results
-  };
+  return result;
 });
 
 post('/projects', async req => {
