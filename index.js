@@ -1,3 +1,7 @@
+"use strict";
+
+const { resolve } = require("url");
+
 module.exports = app => {
 
   const prodLike = process.env.ENV === 'production';
@@ -12,9 +16,9 @@ module.exports = app => {
         let result;
         for (const fn of fns) {
           try {
-            result = await(fn);
+            result = await fn(req);
           } catch (e) {
-            return self.handleError(e);
+            return self.handleError(req, e);
           }
         }
         return req.res.send(result);
@@ -57,6 +61,15 @@ module.exports = app => {
     },
 
     handleError(req, e) {
+      if (!req.res) {
+        throw error(500, 'First argument to handleError must be req');
+      }
+      if (!e) {
+        throw error(500, 'Second argument to handleError must be error');
+      }
+      if (!prodLike) {
+        console.error(e.stack);
+      }
       console.error(JSON.stringify({
         url: req.url,
         method: req.method,
@@ -64,6 +77,7 @@ module.exports = app => {
         at: Date.now(),
         status: e.status,
         message: e.message,
+        ...prodLike ? { stack: e.stack } : {},
       }, null, prodLike ? '' : '  '));
       const res = req.res;
       if (e.status) {
@@ -71,7 +85,7 @@ module.exports = app => {
         return res.send(e.message);
       } else {
         res.status(500);
-        return read.send('error');
+        return res.send('error');
       }
     },
 
@@ -82,8 +96,14 @@ module.exports = app => {
     },
 
     validate(input, rules) {
+      if ((typeof input) !== 'object') {
+        throw error(400, 'object expected');
+      }
+      if ((typeof rules) !== 'object') {
+        throw error(500, 'second argument to validate should be a rules object');
+      }
       const result = {};
-      for (let [ name, details ] of rules) {
+      for (let [ name, details ] of Object.entries(rules)) {
         if (!Object.hasOwn(input, name)) {
           if (details.required) {
             throw error(400, `${name} is required`);
@@ -99,14 +119,20 @@ module.exports = app => {
           };
         }
         const keys = Object.keys(input);
-        if (details.requires && details.requires.find(key => keys.includes(key))) {
-          throw error(400, `${name} requires ${key}`);
+        if (details.requires) {
+          if (!isStrings(details.requires)) {
+            throw self.error(500, `${name}: "requires" property of a validation rule must be an array of strings`);
+          }
+        }
+        const missing = details.requires && details.requires.find(key => !keys.includes(key));
+        if (missing) {
+          throw self.error(400, `${name} requires ${missing}`);
         }
         if (!((input[name] instanceof details.validator) || details.validator(input[name]))) {
           if (!details.error) {
-            throw error(400, `${name} must be a ${details.validator.name}`);
+            throw self.error(400, `${name} must be a ${details.validator.name}`);
           } else {
-            throw error(400, `${name}: ${details.error}`);
+            throw self.error(400, `${name}: ${details.error}`);
           }
         }
         result[name] = input[name];
@@ -117,5 +143,8 @@ module.exports = app => {
 
   return self;
 
-s};
+};
 
+function isStrings(v) {
+  return Array.isArray(v) && !v.some(value => (typeof value) !== 'string');
+}

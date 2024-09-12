@@ -6,6 +6,7 @@ A tiny Express wrapper for fast microservice development
 
 ```bash
 npm install express
+npm install body-parser
 npm install @apostrophecms/minuscule
 ```
 
@@ -15,10 +16,13 @@ npm install @apostrophecms/minuscule
 const express = require('express');
 const minuscule = require('@apostrophecms/minuscule');
 const app = express();
-app.listen(3000);
+const bodyParser = require('body-parser');
+// Allow traditional form submission format
+app.use(bodyParser.urlencoded({ extended: false }))
+// Allow JSON submissions (suggested)
+app.use(bodyParser.json())
 
 const {
-  use,
   get,
   post,
   error,
@@ -59,11 +63,14 @@ post('/projects', async req => {
   return project;
 });
 
-async function expectProjectId(async) {
-  if (!req.params.projectId.matches(/^\w+/)) {
+async function expectProjectId(req) {
+  console.log('-->', req.url, req.params);
+  if (!req.params.projectId.match(/^\w+/)) {
     throw error(400, 'projectId must contain only letters, digits and underscores');
   }
   req.params = req.params.projectId;
   // Can also use "await." If no error is thrown execution continues
 }
+
+app.listen(3000);
 ```
