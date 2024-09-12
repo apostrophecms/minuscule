@@ -61,8 +61,9 @@ post('/projects', async req => {
   return project;
 });
 
+// Validation middleware as an async function
+
 async function expectProjectId(req) {
-  console.log('-->', req.url, req.params);
   if (!req.params.projectId.match(/^\w+/)) {
     throw error(400, 'projectId must contain only letters, digits and underscores');
   }
