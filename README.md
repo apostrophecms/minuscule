@@ -68,7 +68,7 @@ async function expectProjectId(req) {
   if (!req.params.projectId.match(/^\w+/)) {
     throw error(400, 'projectId must contain only letters, digits and underscores');
   }
-  req.params = req.params.projectId;
+  req.projectId = req.params.projectId;
   // Can also use "await." If no error is thrown execution continues
 }
 
