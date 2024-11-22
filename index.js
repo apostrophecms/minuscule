@@ -167,7 +167,6 @@ function satisfies(validator, value, context) {
   }
   if (validator === Boolean) {
     // instanceof is no good for primitive types
-    console.log('validator and value:', validator, value);
     return (typeof value) === 'boolean';
   } else if (validator === String) {
     return (typeof value) === 'string';
