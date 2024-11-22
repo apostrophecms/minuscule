@@ -53,10 +53,22 @@ post('/projects', async req => {
     // Custom validator, only relevant if longName is present
     // (longName must be listed first)
     code: {
+      error: 'must be a string and must match \w+',
       requires: longName,
-      validator(v) {
-        return v.match(/^\w+/);
-      }
+      // May pass an array of validators
+      validator: [
+        String,
+        v => v.match(/^\w+/);
+      ]
+    },
+
+    bonusCode: {
+      error: 'must be a string and "code" must start with eligible-',
+      // May access previously validated properties
+      validator: [
+        String,
+        (v, { code }) => code.startsWith('eligible-')
+      ]
     }
   });
   await myDatabase.insertOne(project);

@@ -140,7 +140,7 @@ module.exports = app => {
         if (missing) {
           throw self.error(400, `${name} requires ${missing}`);
         }
-        if (!satisfies(details.validator, input[name])) {
+        if (!satisfies(details.validator, input[name], result)) {
           if (!details.error) {
             throw self.error(400, `${name} must be a ${details.validator.name}`);
           } else {
@@ -161,7 +161,10 @@ function isStrings(v) {
   return Array.isArray(v) && !v.some(value => (typeof value) !== 'string');
 }
 
-function satisfies(validator, value) {
+function satisfies(validator, value, context) {
+  if (Array.isArray(validator)) {
+    return !validator.some(validator => !satisfies(validator, value, context));
+  }
   if (validator === Boolean) {
     // instanceof is no good for primitive types
     console.log('validator and value:', validator, value);
@@ -173,6 +176,6 @@ function satisfies(validator, value) {
   } else {
     // Constructors (aka classes at runtime) are also functions, so just check instanceof first before
     // trying the validator as a function
-    return (value instanceof validator) || validator(value);
+    return (value instanceof validator) || validator(value, context);
   }
 }

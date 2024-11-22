@@ -58,10 +58,23 @@ describe('test minuscule', function() {
         // Custom validator, only relevant if longName is present
         // (longName must be listed first)
         code: {
+          error: 'must be a string and must match \w+',
           requires: [ 'longName' ],
-          validator(v) {
-            return v.match(/^\w+/);
-          }
+          // Two validators in series
+          validator: [
+            String,
+            (v) => {
+              return v.match(/^\w+/);
+            }
+          ]
+        },
+        bonusCode: {
+          error: 'must be a string and "code" must start with eligible-',
+          // May access previously validated properties
+          validator: [
+            String,
+            (v, { code }) => code.startsWith('eligible-')
+          ]
         }
       });
       // Simulate async work
@@ -103,11 +116,35 @@ describe('test minuscule', function() {
       shortName: 'test1',
       prod: false,
       longName: 'test one',
-      code: 'x999'
+      code: 'eligible-x999',
+      bonusCode: 'cool-bonus'
     });
     assert.strictEqual(response.shortName, 'test1');
     assert.strictEqual(response.longName, 'test one');
-    assert.strictEqual(response.code, 'x999');
+    assert.strictEqual(response.code, 'eligible-x999');
+  });
+
+  it('cannot POST a new project if code has a bad data type', async function() {
+    await assert.rejects(async function() {
+      await fetchPost('http://localhost:3737/projects', {
+        shortName: 'test2',
+        prod: false,
+        longName: 'test one',
+        code: 999
+      });
+    });
+  });
+
+  it('cannot POST a new project with a bonusCode if code is not "eligible" (context access)', async function() {
+    await assert.rejects(async function() {
+      await fetchPost('http://localhost:3737/projects', {
+        shortName: 'test3',
+        prod: false,
+        longName: 'test one',
+        code: 'ineligible-5',
+        bonusCode: 'sneaky'
+      });
+    });
   });
 
   it('can fetch the populated projects list and fetch a single project', async function() {
@@ -125,7 +162,6 @@ describe('test minuscule', function() {
       status: 404
     });
   });
-
 });
 
 async function fetchGet(url) {
