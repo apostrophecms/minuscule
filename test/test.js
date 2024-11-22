@@ -50,6 +50,8 @@ describe('test minuscule', function() {
           required: true
         },
 
+        prod: Boolean,
+
         // Optional, but must be a string if present
         longName: String,
 
@@ -99,6 +101,7 @@ describe('test minuscule', function() {
   it('can POST a new project', async function() {
     const response = await fetchPost('http://localhost:3737/projects', {
       shortName: 'test1',
+      prod: false,
       longName: 'test one',
       code: 'x999'
     });
@@ -128,7 +131,9 @@ describe('test minuscule', function() {
 async function fetchGet(url) {
   const res = await fetch(url);
   if (res.status >= 400) {
-    throw res;
+    const e = new Error('GET fetch error');
+    e.status = res.status;
+    throw e;
   }
   return res.json();
 }
@@ -142,7 +147,9 @@ async function fetchPost(url, body) {
     body: JSON.stringify(body)
   });
   if (res.status >= 400) {
-    throw res;
+    const e = new Error('POST fetch error');
+    e.status = res.status;
+    throw e;
   }
   return res.json();
 }

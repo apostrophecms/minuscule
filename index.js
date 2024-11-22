@@ -73,10 +73,11 @@ module.exports = app => {
 
     handleError(req, e) {
       if (!req.res) {
-        throw error(500, 'First argument to handleError must be req');
+        // Don't create a chicken and egg problem by calling self.error here
+        throw new Error('First argument to handleError must be req');
       }
       if (!e) {
-        throw error(500, 'Second argument to handleError must be error');
+        throw new Error('Second argument to handleError must be error');
       }
       if (!prodLike) {
         console.error(e.stack);
@@ -117,7 +118,7 @@ module.exports = app => {
       for (let [ name, details ] of Object.entries(rules)) {
         if (!Object.hasOwn(input, name)) {
           if (details.required) {
-            throw error(400, `${name} is required`);
+            throw self.error(400, `${name} is required`);
           }
           if (details.default !== undefined) {
             result[name] = details.default;
@@ -139,7 +140,7 @@ module.exports = app => {
         if (missing) {
           throw self.error(400, `${name} requires ${missing}`);
         }
-        if (!((input[name] instanceof details.validator) || details.validator(input[name]))) {
+        if (!satisfies(details.validator, input[name])) {
           if (!details.error) {
             throw self.error(400, `${name} must be a ${details.validator.name}`);
           } else {
@@ -158,4 +159,20 @@ module.exports = app => {
 
 function isStrings(v) {
   return Array.isArray(v) && !v.some(value => (typeof value) !== 'string');
+}
+
+function satisfies(validator, value) {
+  if (validator === Boolean) {
+    // instanceof is no good for primitive types
+    console.log('validator and value:', validator, value);
+    return (typeof value) === 'boolean';
+  } else if (validator === String) {
+    return (typeof value) === 'string';
+  } else if (validator === Number) {
+    return (typeof value) === 'number';
+  } else {
+    // Constructors (aka classes at runtime) are also functions, so just check instanceof first before
+    // trying the validator as a function
+    return (value instanceof validator) || validator(value);
+  }
 }
