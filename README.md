@@ -1,6 +1,6 @@
 # @apostrophecms/minuscule
 
-A tiny Express wrapper for fast microservice development
+A tiny Express wrapper for safe, rapid microservice development
 
 ## installation
 
