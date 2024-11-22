@@ -18,16 +18,19 @@ const minuscule = require('@apostrophecms/minuscule');
 const app = express();
 const bodyParser = require('body-parser');
 // Allow traditional form submission format
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }));
 // Allow JSON submissions (suggested)
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
 const {
   get,
   post,
   error,
-  validate
+  validate,
+  use
 } = minuscule(app);
+
+use(expectApiKey);
 
 get('/projects/:projectId', expectProjectId, async req => {
   const result = await myDatabase.findOne({
@@ -61,7 +64,20 @@ post('/projects', async req => {
   return project;
 });
 
-// Validation middleware as an async function
+// Global validation middleware as an async function
+
+async function expectApiKey(req) {
+  const header = req.headers.authorization;
+  if (!header) {
+    throw error(403, 'API key required');
+  }
+  const matches = header.match(/^ApiKey\s+(\S.*)$/i);
+  if (matches[1] !== 'some-api-key') {
+    throw error(403, 'Invalid API key');
+  }
+}
+
+// Route-specific validation middleware as an async function
 
 async function expectProjectId(req) {
   if (!req.params.projectId.match(/^\w+/)) {

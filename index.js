@@ -8,6 +8,17 @@ module.exports = app => {
 
   const self = {
 
+    use(fn) {
+      app.use(async (req, res, next) => {
+        try {
+          await fn(req);
+          return next();
+        } catch (e) {
+          return self.handleError(req, e);
+        }
+      });
+    },
+
     route(method, path, ...fns) {
       if (((typeof method) !== 'string') || ((typeof path) !== 'string') || ((typeof fns[0]) !== 'function')) {
         throw new Error(`route() must be called with (method, path, [...optionalMiddlewareFns], fn)`);
