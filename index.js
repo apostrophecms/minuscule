@@ -107,15 +107,15 @@ module.exports = app => {
       return e;
     },
 
-    validate(input, rules) {
+    validate(input, fields, validators = []) {
       if ((typeof input) !== 'object') {
-        throw error(400, 'object expected');
+        throw self.error(400, 'object expected');
       }
-      if ((typeof rules) !== 'object') {
-        throw error(500, 'second argument to validate should be a rules object');
+      if ((typeof fields) !== 'object') {
+        throw self.error(500, 'second argument to validate should be a fields object');
       }
       const result = {};
-      for (let [ name, details ] of Object.entries(rules)) {
+      for (let [ name, details ] of Object.entries(fields)) {
         if (!Object.hasOwn(input, name)) {
           if (details.required) {
             throw self.error(400, `${name} is required`);
@@ -148,6 +148,11 @@ module.exports = app => {
           }
         }
         result[name] = input[name];
+      }
+      for (const { error, validator } of validators) {
+        if (!validator(result)) {
+          throw self.error(400, error);
+        }
       }
       return result;
     }

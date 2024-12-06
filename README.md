@@ -17,9 +17,11 @@ const express = require('express');
 const minuscule = require('@apostrophecms/minuscule');
 const app = express();
 const bodyParser = require('body-parser');
-// Allow traditional form submission format
+
+// Allow traditional form submission format (if you want it)
 app.use(bodyParser.urlencoded({ extended: false }));
-// Allow JSON submissions (suggested)
+
+// Allow JSON submissions (recommended)
 app.use(bodyParser.json());
 
 const {
@@ -32,6 +34,8 @@ const {
 
 use(expectApiKey);
 
+// async GET API functions that just return a result
+
 get('/projects/:projectId', expectProjectId, async req => {
   const result = await myDatabase.findOne({
     id: req.params.projectId
@@ -39,6 +43,8 @@ get('/projects/:projectId', expectProjectId, async req => {
   // returning an object -> automatic JSON response via req.res
   return result;
 });
+
+// async POST API functions with easy, safe validation
 
 post('/projects', async req => {
   const project = validate(req.body, {
@@ -49,6 +55,10 @@ post('/projects', async req => {
 
     // Optional, but must be a string if present
     longName: String,
+
+    // Optional, must be a string if present, and at least one
+    // of longName and altName must be present (see below)
+    altName: String,
 
     // Custom validator, only relevant if longName is present
     // (longName must be listed first)
@@ -70,7 +80,17 @@ post('/projects', async req => {
         (v, { code }) => code.startsWith('eligible-')
       ]
     }
-  });
+  }, [
+    // We can also have validators that are not specific to a single field.
+    // "validator" must be a function and receives the result object.
+    // "error" must be provided
+    {
+      validator({ longName, altName }) {
+        return longName != null || altName != null;
+      },
+      error: 'At least one of longName and altName must be provided'
+    }
+  ]);
   await myDatabase.insertOne(project);
   // returning an object -> automatic JSON response via req.res
   return project;

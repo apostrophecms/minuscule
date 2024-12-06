@@ -55,6 +55,10 @@ describe('test minuscule', function() {
         // Optional, but must be a string if present
         longName: String,
 
+        // Optional, must be a string if present, and at least one
+        // of longName and altName must be present (see below)
+        altName: String,
+
         // Custom validator, only relevant if longName is present
         // (longName must be listed first)
         code: {
@@ -76,7 +80,15 @@ describe('test minuscule', function() {
             (v, { code }) => code.startsWith('eligible-')
           ]
         }
-      });
+      }, [
+        // We can also have validators that are not specific to a single field
+        {
+          validator({ longName, altName }) {
+            return longName != null || altName != null;
+          },
+          error: 'At least one of longName and altName must be provided'
+        }
+      ]);
       // Simulate async work
       await pause(100);
       project.id = nextId.toString();
@@ -162,6 +174,26 @@ describe('test minuscule', function() {
       status: 404
     });
   });
+
+  it('cannot POST a new project unless at least one of longName and altName is provided', async function() {
+    await assert.rejects(async function() {
+      await fetchPost('http://localhost:3737/projects', {
+        shortName: 'test3',
+        prod: false
+      });
+    });
+    await fetchPost('http://localhost:3737/projects', {
+      shortName: 'test3',
+      prod: false,
+      altName: 'alt name provided'
+    });
+    await fetchPost('http://localhost:3737/projects', {
+      shortName: 'test3',
+      prod: false,
+      longName: 'long name provided'
+    });
+  });
+
 });
 
 async function fetchGet(url) {
