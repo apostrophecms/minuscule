@@ -64,9 +64,9 @@ module.exports = app => {
       return self.route('put', path, ...fns);
     },
 
-    delete(path, ...fns) {
+    del(path, ...fns) {
       if (((typeof path) !== 'string') || ((typeof fns[0]) !== 'function')) {
-        throw new Error(`delete() must be called with (path, [...optionalMiddlewareFns], fn)`);
+        throw new Error(`del() must be called with (path, [...optionalMiddlewareFns], fn)`);
       }
       return self.route('delete', path, ...fns);
     },

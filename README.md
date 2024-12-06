@@ -121,3 +121,7 @@ async function expectProjectId(req) {
 
 app.listen(3000);
 ```
+
+## Other methods available
+
+`patch`, `put` and `del` are available and wrap `app.patch`, `app.post` and `app.delete` the same way that `get` and `post` wrap `app.get` and `app.post`. `del` was named to avoid conflict with the `delete` keyword when importing.
