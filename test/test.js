@@ -54,7 +54,7 @@ describe('test minuscule', function() {
   let server;
   before(function() {
     const express = require('express');
-    const minuscule = require('../index.js');
+    const { WebError, minuscule } = require('../index.js');
     const app = express();
     const bodyParser = require('body-parser');
     // Allow traditional form submission format
@@ -87,7 +87,7 @@ describe('test minuscule', function() {
       await pause(100);
       const result = data.find(datum => datum.id === req.projectId);
       if (!result) {
-        throw error(404, 'project not found');
+        throw new WebError(404, 'project not found');
       }
       return result;
     });
@@ -107,7 +107,7 @@ describe('test minuscule', function() {
       await pause(100);
       const result = data.find(datum => datum.id === req.projectId);
       if (!result) {
-        throw error(404, 'project not found');
+        throw new WebError(404, 'project not found');
       }
       const combined = {
         ...result,
@@ -120,7 +120,7 @@ describe('test minuscule', function() {
 
     async function expectProjectId(req) {
       if (!req.params.projectId.match(/^\w+/)) {
-        throw error(400, 'projectId must contain only letters, digits and underscores');
+        throw new WebError(400, 'projectId must contain only letters, digits and underscores');
       }
       req.projectId = req.params.projectId;
       // Can also use "await." If no error is thrown execution continues

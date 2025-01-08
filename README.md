@@ -14,10 +14,9 @@ npm install @apostrophecms/minuscule
 
 ```javascript
 const express = require('express');
-const minuscule = require('@apostrophecms/minuscule');
+const { WebError, minuscule } = require('@apostrophecms/minuscule');
 const app = express();
 const bodyParser = require('body-parser');
-
 // Allow traditional form submission format (if you want it)
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -27,7 +26,6 @@ app.use(bodyParser.json());
 const {
   get,
   post,
-  error,
   validate,
   use
 } = minuscule(app);
@@ -101,11 +99,11 @@ post('/projects', async req => {
 async function expectApiKey(req) {
   const header = req.headers.authorization;
   if (!header) {
-    throw error(403, 'API key required');
+    throw new WebError(403, 'API key required');
   }
   const matches = header.match(/^ApiKey\s+(\S.*)$/i);
   if (matches[1] !== 'some-api-key') {
-    throw error(403, 'Invalid API key');
+    throw new WebError(403, 'Invalid API key');
   }
 }
 
@@ -113,7 +111,7 @@ async function expectApiKey(req) {
 
 async function expectProjectId(req) {
   if (!req.params.projectId.match(/^\w+/)) {
-    throw error(400, 'projectId must contain only letters, digits and underscores');
+    throw new WebError(400, 'projectId must contain only letters, digits and underscores');
   }
   req.projectId = req.params.projectId;
   // Can also use "await." If no error is thrown execution continues

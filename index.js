@@ -1,8 +1,8 @@
 "use strict";
 
-const { resolve } = require("url");
+const { validate, WebError } = require('@apostrophecms/validate');
 
-module.exports = app => {
+function minuscule(app) {
 
   const prodLike = process.env.ENV === 'production';
 
@@ -101,85 +101,15 @@ module.exports = app => {
       }
     },
 
-    error(status, message = 'error') {
-      const e = new Error(message);
-      e.status = status;
-      return e;
-    },
+    validate
 
-    validate(input, fields, validators = []) {
-      if ((typeof input) !== 'object') {
-        throw self.error(400, 'object expected');
-      }
-      if ((typeof fields) !== 'object') {
-        throw self.error(500, 'second argument to validate should be a fields object');
-      }
-      const result = {};
-      for (let [ name, details ] of Object.entries(fields)) {
-        if (!Object.hasOwn(input, name)) {
-          if (details.required) {
-            throw self.error(400, `${name} is required`);
-          }
-          if (details.default !== undefined) {
-            result[name] = details.default;
-          }
-          continue;
-        }
-        if ((typeof details) === 'function') {
-          details = {
-            validator: details
-          };
-        }
-        const keys = Object.keys(input);
-        if (details.requires) {
-          if (!isStrings(details.requires)) {
-            throw self.error(500, `${name}: "requires" property of a validation rule must be an array of strings`);
-          }
-        }
-        const missing = details.requires && details.requires.find(key => !keys.includes(key));
-        if (missing) {
-          throw self.error(400, `${name} requires ${missing}`);
-        }
-        if (!satisfies(details.validator, input[name], result)) {
-          if (!details.error) {
-            throw self.error(400, `${name} must be a ${details.validator.name}`);
-          } else {
-            throw self.error(400, `${name}: ${details.error}`);
-          }
-        }
-        result[name] = input[name];
-      }
-      for (const { error, validator } of validators) {
-        if (!validator(result)) {
-          throw self.error(400, error);
-        }
-      }
-      return result;
-    }
   };
 
   return self;
 
 };
 
-function isStrings(v) {
-  return Array.isArray(v) && !v.some(value => (typeof value) !== 'string');
-}
-
-function satisfies(validator, value, context) {
-  if (Array.isArray(validator)) {
-    return !validator.some(validator => !satisfies(validator, value, context));
-  }
-  if (validator === Boolean) {
-    // instanceof is no good for primitive types
-    return (typeof value) === 'boolean';
-  } else if (validator === String) {
-    return (typeof value) === 'string';
-  } else if (validator === Number) {
-    return (typeof value) === 'number';
-  } else {
-    // Constructors (aka classes at runtime) are also functions, so just check instanceof first before
-    // trying the validator as a function
-    return (value instanceof validator) || validator(value, context);
-  }
-}
+module.exports = {
+  WebError,
+  minuscule
+};
