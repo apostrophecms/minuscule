@@ -17,6 +17,15 @@ const express = require('express');
 const { WebError, minuscule } = require('@apostrophecms/minuscule');
 const app = express();
 const bodyParser = require('body-parser');
+const yup = require('yup');
+
+// Example yup schema, see yup documentation
+const projectSchema = object({
+  shortName: string().required(),
+  longName: string(),
+  prod: boolean()
+});
+
 // Allow traditional form submission format (if you want it)
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -26,7 +35,6 @@ app.use(bodyParser.json());
 const {
   get,
   post,
-  validate,
   use
 } = minuscule(app);
 
@@ -45,50 +53,7 @@ get('/projects/:projectId', expectProjectId, async req => {
 // async POST API functions with easy, safe validation
 
 post('/projects', async req => {
-  const project = validate(req.body, {
-    shortName: {
-      validator: String,
-      required: true
-    },
-
-    // Optional, but must be a string if present
-    longName: String,
-
-    // Optional, must be a string if present, and at least one
-    // of longName and altName must be present (see below)
-    altName: String,
-
-    // Custom validator, only relevant if longName is present
-    // (longName must be listed first)
-    code: {
-      error: 'must be a string and must match \w+',
-      requires: longName,
-      // May pass an array of validators
-      validator: [
-        String,
-        v => v.match(/^\w+/);
-      ]
-    },
-
-    bonusCode: {
-      error: 'must be a string and "code" must start with eligible-',
-      // May access previously validated properties
-      validator: [
-        String,
-        (v, { code }) => code.startsWith('eligible-')
-      ]
-    }
-  }, [
-    // We can also have validators that are not specific to a single field.
-    // "validator" must be a function and receives the result object.
-    // "error" must be provided
-    {
-      validator({ longName, altName }) {
-        return longName != null || altName != null;
-      },
-      error: 'At least one of longName and altName must be provided'
-    }
-  ]);
+  const project = await projectSchema.validate(req.body);
   await myDatabase.insertOne(project);
   // returning an object -> automatic JSON response via req.res
   return project;

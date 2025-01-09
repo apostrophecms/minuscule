@@ -1,60 +1,19 @@
 "use strict";
 
 const assert = require('assert');
+const { object, string, boolean, number } = require('yup');
+const { WebError, minuscule } = require('../index.js');
 
-const projectProps = {
-  shortName: {
-    validator: String,
-    required: true
-  },
-
-  prod: Boolean,
-
-  // Optional, but must be a string if present
-  longName: String,
-
-  // Optional, must be a string if present, and at least one
-  // of longName and altName must be present (see below)
-  altName: String,
-
-  // Custom validator, only relevant if longName is present
-  // (longName must be listed first)
-  code: {
-    error: 'must be a string and must match \w+',
-    requires: [ 'longName' ],
-    // Two validators in series
-    validator: [
-      String,
-      (v) => {
-        return v.match(/^\w+/);
-      }
-    ]
-  },
-  bonusCode: {
-    error: 'must be a string and "code" must start with eligible-',
-    // May access previously validated properties
-    validator: [
-      String,
-      (v, { code }) => code.startsWith('eligible-')
-    ]
-  }
-};
-
-const projectValidators = [
-  // We can also have validators that are not specific to a single field
-  {
-    validator({ longName, altName }) {
-      return longName != null || altName != null;
-    },
-    error: 'At least one of longName and altName must be provided'
-  }
-];
+const projectSchema = object({
+  shortName: string().required(),
+  longName: string(),
+  prod: boolean()
+});
 
 describe('test minuscule', function() {
   let server;
   before(function() {
     const express = require('express');
-    const { WebError, minuscule } = require('../index.js');
     const app = express();
     const bodyParser = require('body-parser');
     // Allow traditional form submission format
@@ -70,8 +29,6 @@ describe('test minuscule', function() {
       get,
       post,
       patch,
-      error,
-      validate
     } = minuscule(app);
 
     get('/projects', async req => {
@@ -93,7 +50,7 @@ describe('test minuscule', function() {
     });
 
     post('/projects', async req => {
-      const project = validate(req.body, projectProps, projectValidators);
+      const project = await projectSchema.validate(req.body);
       // Simulate async work
       await pause(100);
       project.id = nextId.toString();
@@ -113,7 +70,7 @@ describe('test minuscule', function() {
         ...result,
         ...req.body
       };
-      const valid = validate(combined, projectProps, projectValidators);
+      const valid = await projectSchema.validate(combined);
       data[data.findIndex(datum => datum.id === req.projectId)] = valid;
       return valid;
     });
@@ -147,35 +104,17 @@ describe('test minuscule', function() {
   it('can POST a new project', async function() {
     const response = await fetchPost('http://localhost:3737/projects', {
       shortName: 'test1',
-      prod: false,
-      longName: 'test one',
-      code: 'eligible-x999',
-      bonusCode: 'cool-bonus'
+      prod: false
     });
     assert.strictEqual(response.shortName, 'test1');
-    assert.strictEqual(response.longName, 'test one');
-    assert.strictEqual(response.code, 'eligible-x999');
+    assert.strictEqual(response.prod, false);
   });
 
-  it('cannot POST a new project if code has a bad data type', async function() {
+  it('cannot POST a new project if prod is not a boolean', async function() {
     await assert.rejects(async function() {
       await fetchPost('http://localhost:3737/projects', {
         shortName: 'test2',
-        prod: false,
-        longName: 'test one',
-        code: 999
-      });
-    });
-  });
-
-  it('cannot POST a new project with a bonusCode if code is not "eligible" (context access)', async function() {
-    await assert.rejects(async function() {
-      await fetchPost('http://localhost:3737/projects', {
-        shortName: 'test3',
-        prod: false,
-        longName: 'test one',
-        code: 'ineligible-5',
-        bonusCode: 'sneaky'
+        prod: 'invalidValue'
       });
     });
   });
@@ -194,31 +133,12 @@ describe('test minuscule', function() {
     });
     assert.strictEqual(response3.shortName, 'test1');
     assert.strictEqual(response3.longName, 'test one2');
-    assert.strictEqual(response3.code, 'eligible-x999');
+    assert.strictEqual(response3.prod, false);
   });
 
   it('Get a 404 when fetching a project with a bogus id', async function() {
     await assert.rejects(fetchGet('http://localhost:3737/projects/madethisup'), {
       status: 404
-    });
-  });
-
-  it('cannot POST a new project unless at least one of longName and altName is provided', async function() {
-    await assert.rejects(async function() {
-      await fetchPost('http://localhost:3737/projects', {
-        shortName: 'test3',
-        prod: false
-      });
-    });
-    await fetchPost('http://localhost:3737/projects', {
-      shortName: 'test3',
-      prod: false,
-      altName: 'alt name provided'
-    });
-    await fetchPost('http://localhost:3737/projects', {
-      shortName: 'test3',
-      prod: false,
-      longName: 'long name provided'
     });
   });
 

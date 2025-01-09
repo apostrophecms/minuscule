@@ -1,6 +1,12 @@
 "use strict";
 
-const { validate, WebError } = require('@apostrophecms/validate');
+class WebError extends Error {
+  constructor(status, message) {
+    super(`${status}: ${message}`);
+    this.status = status;
+    return this;
+  }
+}
 
 function minuscule(app) {
 
@@ -72,6 +78,10 @@ function minuscule(app) {
     },
 
     handleError(req, e) {
+      if (e.name === 'ValidationError') {
+        // Expected status code when using the yup library for validation
+        e.status = 400;
+      }
       if (!req.res) {
         // Don't create a chicken and egg problem by calling self.error here
         throw new Error('First argument to handleError must be req');
@@ -99,9 +109,7 @@ function minuscule(app) {
         res.status(500);
         return res.send('error');
       }
-    },
-
-    validate
+    }
 
   };
 
