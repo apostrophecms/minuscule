@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A tiny Express wrapper for fast microservice development",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "mocha"
   },
@@ -23,9 +24,9 @@
   },
   "homepage": "https://github.com/apostrophecms/minuscule#readme",
   "devDependencies": {
-    "body-parser": "^1.20.3",
-    "express": "^4.21.0",
-    "mocha": "^10.7.3",
+    "body-parser": "^2.0.2",
+    "express": "^5.0.1",
+    "mocha": "^11.0.1",
     "yup": "^1.6.1"
   }
 }

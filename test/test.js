@@ -1,8 +1,7 @@
-"use strict";
-
-const assert = require('assert');
-const { object, string, boolean, number } = require('yup');
-const { WebError, minuscule } = require('../index.js');
+import assert from 'node:assert/strict';
+import express from 'express';
+import { object, string, boolean, number } from 'yup';
+import { WebError, minuscule } from '../index.js';
 
 const projectSchema = object({
   shortName: string().required(),
@@ -13,53 +12,44 @@ const projectSchema = object({
 describe('test minuscule', function() {
   let server;
   before(function() {
-    const express = require('express');
-    const app = express();
-    const bodyParser = require('body-parser');
+    const app = minuscule(express());
     // Allow traditional form submission format
-    app.use(bodyParser.urlencoded({ extended: false }))
+    app.use(express.urlencoded({ extended: false }))
     // Allow JSON submissions (suggested)
-    app.use(bodyParser.json());
+    app.use(express.json());
 
     let nextId = 1;
-
     const data = [];
 
-    const {
-      get,
-      post,
-      patch,
-    } = minuscule(app);
-
-    get('/projects', async req => {
+    app.get('/projects', async (req, res, next) => {
       // Simulate async work
       await pause(100);
-      return {
+      res.send({
         results: data
-      };
+      });
     });
 
-    get('/projects/:projectId', expectProjectId, async req => {
+    app.get('/projects/:projectId', expectProjectId, async (req, res, next) => {
       // Simulate async work
       await pause(100);
       const result = data.find(datum => datum.id === req.projectId);
       if (!result) {
         throw new WebError(404, 'project not found');
       }
-      return result;
+      return res.send(result);
     });
 
-    post('/projects', async req => {
+    app.post('/projects', async (req, res, next) => {
       const project = await projectSchema.validate(req.body);
       // Simulate async work
       await pause(100);
       project.id = nextId.toString();
       nextId++;
       data.push(project);
-      return project;
+      return res.send(project);
     });
 
-    patch('/projects/:projectId', expectProjectId, async req => {
+    app.patch('/projects/:projectId', expectProjectId, async (req, res, next) => {
       // Simulate async work
       await pause(100);
       const result = data.find(datum => datum.id === req.projectId);
@@ -72,15 +62,17 @@ describe('test minuscule', function() {
       };
       const valid = await projectSchema.validate(combined);
       data[data.findIndex(datum => datum.id === req.projectId)] = valid;
-      return valid;
+      return res.send(valid);
     });
 
-    async function expectProjectId(req) {
+    async function expectProjectId(req, res, next) {
       if (!req.params.projectId.match(/^\w+/)) {
         throw new WebError(400, 'projectId must contain only letters, digits and underscores');
       }
       req.projectId = req.params.projectId;
       // Can also use "await." If no error is thrown execution continues
+
+      next();
     }
 
     server = app.listen(3737);
