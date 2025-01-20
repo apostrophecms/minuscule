@@ -1,6 +1,22 @@
 # @apostrophecms/minuscule
 
-A tiny Express wrapper for safe, rapid microservice development
+**A tiny Express wrapper for safe, rapid microservice development**
+
+minuscule seeks to allow developers to write API routes more safely, with less cognitive load and less chance of accidental bugs.
+
+Specifically, minuscule allows developers to **simply return a value** from route functions, including async functions, and automatically encodes that as a JSON response. Similarly, minuscule allows developers to **simply throw an exception** from both middleware functions and route functions, whether they are async or not. minuscule also provides conveniences to create errors with the status code of the developer's choice, as well as a default 500 error for other exceptions.
+
+Contrast this with using Express directly. Express 4 requires the developer to manually manipulate the `res` object, adding extra cognitive load and introducing a risk that the developr will forget to handle `res`, producing a hung request. Express 5 improves on this situation by catching rejected promises, but still does not allow for automatic handling of the "happy path" (the success case).
+
+Note that minuscule middleware is different from Express middleware. While Express middleware must invoke `next()`, minuscule middleware just returns normally to continue execution, or throws an exception to end the request with an error.
+
+## "What about use cases like redirects, static server middleware, etc.?"
+
+Currently minuscule does not address these edge cases, because they rarely come up in API development. However if you have a need to implement these you can just use Express middleware and routes for the purpose. We have not ruled out adding support for redirects, etc. in minuscule itself.
+
+## "Do I have to use Express 5 with minuscule?"
+
+No, Express 4 is fine. Express 5 is also supported.
 
 ## installation
 
