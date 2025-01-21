@@ -22,7 +22,6 @@ No, Express 4 is fine. Express 5 is also supported.
 
 ```bash
 npm install express
-npm install body-parser
 npm install @apostrophecms/minuscule
 ```
 
@@ -32,7 +31,6 @@ npm install @apostrophecms/minuscule
 const express = require('express');
 const { WebError, minuscule } = require('@apostrophecms/minuscule');
 const app = express();
-const bodyParser = require('body-parser');
 const yup = require('yup');
 
 // Example yup schema, see yup documentation
@@ -43,10 +41,10 @@ const projectSchema = object({
 });
 
 // Allow traditional form submission format (if you want it)
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false }));
 
 // Allow JSON submissions (recommended)
-app.use(bodyParser.json());
+app.use(express.json());
 
 const {
   get,

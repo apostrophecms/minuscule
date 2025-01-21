@@ -15,11 +15,10 @@ describe('test minuscule', function() {
   before(function() {
     const express = require('express');
     const app = express();
-    const bodyParser = require('body-parser');
     // Allow traditional form submission format
-    app.use(bodyParser.urlencoded({ extended: false }))
+    app.use(express.urlencoded({ extended: false }))
     // Allow JSON submissions (suggested)
-    app.use(bodyParser.json());
+    app.use(express.json());
 
     let nextId = 1;
 

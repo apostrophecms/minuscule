@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/apostrophecms/minuscule#readme",
   "devDependencies": {
-    "body-parser": "^1.20.3",
     "express": "^4.21.0",
     "mocha": "^10.7.3",
     "yup": "^1.6.1"
